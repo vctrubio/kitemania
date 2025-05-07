@@ -40,12 +40,14 @@ export function Navbar() {
     <header className="sticky top-0 z-10 bg-background p-4 border-b-2 border-slate-200 dark:border-slate-800 flex flex-row justify-between items-center">
       <nav className="flex gap-6">
         <Link href="/" className="font-semibold hover:underline">Home</Link>
-        <Link href="/balance" className="font-semibold hover:underline">Balance</Link>
-        <Link href="/calendar" className="font-semibold hover:underline">Calendar</Link>
-        <Link href="/users" className="font-semibold hover:underline">Users</Link>
+        <Link href="/equipment" className="font-semibold hover:underline">Equipment</Link>
+        <Link href="/students" className="font-semibold hover:underline">Students</Link>
+        <Link href="/teachers" className="font-semibold hover:underline">Teachers</Link>
+        <Link href="/packages" className="font-semibold hover:underline">Packages</Link>
+        <Link href="/bookings" className="font-semibold hover:underline">Bookings</Link>
       </nav>
       <div className="flex items-center gap-6">
-        <ThemeToggle theme={theme} setTheme={setTheme} />
+        <ThemeToggle theme={theme ?? "light"} setTheme={setTheme} />
         {isAuthenticated && (
           <button
             className="flex items-center gap-2 px-5 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors text-base font-medium ml-2"

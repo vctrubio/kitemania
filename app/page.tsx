@@ -3,16 +3,8 @@
 import { Navbar } from "../components/Navbar";
 import { StudentForm } from "../components/forms/StudentForm";
 import { TeacherForm } from "../components/forms/TeacherForm";
-import { LessonForm } from "../components/forms/LessonForm";
-import { EquipmentSetForm } from "../components/forms/EquipmentSetForm";
-import { SessionForm } from "../components/forms/SessionForm";
-import { BookingForm } from "../components/forms/BookingForm";
 import { StudentsList } from "../components/shows/StudentsList";
 import { TeachersList } from "../components/shows/TeachersList";
-import { LessonsList } from "../components/shows/LessonsList";
-import { EquipmentSetsList } from "../components/shows/EquipmentSetsList";
-import { SessionsList } from "../components/shows/SessionsList";
-import { BookingsList } from "../components/shows/BookingsList";
 import { useState, useEffect } from "react";
 
 function getCurrentDateTime() {
@@ -64,19 +56,11 @@ export default function Home() {
           <div className="flex flex-wrap gap-8 [&>*]:min-w-[500px]">
             <StudentForm />
             <TeacherForm />
-            <LessonForm />
-            <EquipmentSetForm />
-            <SessionForm />
-            <BookingForm />
           </div>
           {/* Lists Section */}
           <div className="flex flex-wrap gap-8 [&>*]:min-w-[500px]">
             <StudentsList />
             <TeachersList />
-            <LessonsList />
-            <EquipmentSetsList />
-            <SessionsList />
-            <BookingsList />
           </div>
         </div>
       </main>

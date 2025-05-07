@@ -2,7 +2,6 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { Navbar } from "../../../components/Navbar";
 import { useState, useEffect } from "react";
 
 export default function EquipmentPage() {
@@ -12,7 +11,6 @@ export default function EquipmentPage() {
 
   return (
     <>
-      <Navbar />
       <main className="p-8">
         <h1 className="text-2xl font-bold mb-8">Equipment Management</h1>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
