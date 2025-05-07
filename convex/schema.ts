@@ -10,5 +10,8 @@ export default defineSchema({
   numbers: defineTable({
     value: v.number(),
   }),
-  personals
+  students: defineTable({
+    userId: v.optional(v.id("users")),
+    age: v.number()
+  })
 });

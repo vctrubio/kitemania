@@ -2,8 +2,9 @@
 
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
-import Link from "next/link";
 import { Navbar } from "./components/Navbar";
+import { useState } from "react";
+import { Id } from "../convex/_generated/dataModel";
 
 export default function Home() {
   return (
@@ -17,114 +18,88 @@ export default function Home() {
 }
 
 function Content() {
-  const { viewer, numbers } =
-    useQuery(api.myFunctions.listNumbers, {
-      count: 10,
-    }) ?? {};
-  const addNumber = useMutation(api.myFunctions.addNumber);
+  const { isAuthenticated, isLoading } = useConvexAuth();
+  const students = useQuery(api.students.list) ?? [];
+  const users = useQuery(api.students.getUsers) ?? [];
+  const addStudent = useMutation(api.students.add);
+  const [newAge, setNewAge] = useState("");
+  const [selectedUserId, setSelectedUserId] = useState<string | undefined>(undefined);
 
-  if (viewer === undefined || numbers === undefined) {
+  if (isLoading || students === undefined || users === undefined) {
     return (
       <div className="mx-auto">
-        <p>loading... (consider a loading skeleton)</p>
+        <p>Loading students...</p>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-8 max-w-lg mx-auto">
-      <p>Welcome {viewer ?? "Anonymous"}!</p>
-      <p>
-        Click the button below and open this page in another window - this data
-        is persisted in the Convex cloud database!
-      </p>
-      <p>
-        <button
-          className="bg-foreground text-background text-sm px-4 py-2 rounded-md"
-          onClick={() => {
-            void addNumber({ value: Math.floor(Math.random() * 10) });
-          }}
-        >
-          Add a random number
-        </button>
-      </p>
-      <p>
-        Numbers:{" "}
-        {numbers?.length === 0
-          ? "Click the button!"
-          : (numbers?.join(", ") ?? "...")}
-      </p>
-      <p>
-        Edit{" "}
-        <code className="text-sm font-bold font-mono px-1 py-0.5 rounded-md border border-slate-300 dark:border-slate-700">
-          convex/myFunctions.ts
-        </code>{" "}
-        to change your backend
-      </p>
-      <p>
-        Edit{" "}
-        <code className="text-sm font-bold font-mono  px-1 py-0.5 rounded-md border border-slate-300 dark:border-slate-700">
-          app/page.tsx
-        </code>{" "}
-        to change your frontend
-      </p>
-      <p>
-        See the{" "}
-        <Link href="/server" className="underline hover:no-underline">
-          /server route
-        </Link>{" "}
-        for an example of loading data in a server component
-      </p>
-      <div className="flex flex-col">
-        <p className="text-lg font-bold">Useful resources:</p>
-        <div className="flex gap-2">
-          <div className="flex flex-col gap-2 w-1/2">
-            <ResourceCard
-              title="Convex docs"
-              description="Read comprehensive documentation for all Convex features."
-              href="https://docs.convex.dev/home"
+      <h1 className="text-2xl font-bold">Student Management</h1>
+      
+      <div className="flex flex-col gap-4">
+        <h2 className="text-xl font-semibold">Add New Student</h2>
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            <input
+              type="number"
+              value={newAge}
+              onChange={(e) => setNewAge(e.target.value)}
+              placeholder="Enter age"
+              className="px-4 py-2 border rounded-md"
             />
-            <ResourceCard
-              title="Stack articles"
-              description="Learn about best practices, use cases, and more from a growing
-            collection of articles, videos, and walkthroughs."
-              href="https://www.typescriptlang.org/docs/handbook/2/basic-types.html"
-            />
+            <select
+              value={selectedUserId ?? ""}
+              onChange={(e) => setSelectedUserId(e.target.value || undefined)}
+              className="px-4 py-2 border rounded-md"
+            >
+              <option value="">Select a user (optional)</option>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.email}
+                </option>
+              ))}
+            </select>
           </div>
-          <div className="flex flex-col gap-2 w-1/2">
-            <ResourceCard
-              title="Templates"
-              description="Browse our collection of templates to get started quickly."
-              href="https://www.convex.dev/templates"
-            />
-            <ResourceCard
-              title="Discord"
-              description="Join our developer community to ask questions, trade tips & tricks,
-            and show off your projects."
-              href="https://www.convex.dev/community"
-            />
-          </div>
+          <button
+            className="bg-foreground text-background text-sm px-4 py-2 rounded-md"
+            onClick={() => {
+              if (newAge) {
+                void addStudent({ 
+                  age: parseInt(newAge),
+                  userId: selectedUserId as Id<"users"> | undefined,
+                });
+                setNewAge("");
+                setSelectedUserId(undefined);
+              }
+            }}
+          >
+            Add Student
+          </button>
         </div>
       </div>
-    </div>
-  );
-}
 
-function ResourceCard({
-  title,
-  description,
-  href,
-}: {
-  title: string;
-  description: string;
-  href: string;
-}) {
-  return (
-    <div className="flex flex-col gap-2  p-4 rounded-md h-28 overflow-auto border border-slate-300 dark:border-slate-700">
-      <a href={href} className="text-sm underline hover:no-underline">
-        {title}
-      </a>
-      <p className="text-xs">{description}</p>
+      <div className="flex flex-col gap-4">
+        <h2 className="text-xl font-semibold">Student List</h2>
+        {students.length === 0 ? (
+          <p>No students yet. Add one above!</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {students.map((student) => {
+              const assignedUser = users.find(u => u.id === student.userId);
+              return (
+                <div 
+                  key={student._id} 
+                  className="p-4 border rounded-md"
+                >
+                  <p>Age: {student.age}</p>
+                  <p>Assigned to: {assignedUser?.email ?? "Not assigned"}</p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
