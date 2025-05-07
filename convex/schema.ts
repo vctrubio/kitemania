@@ -8,10 +8,17 @@ export default defineSchema({
     value: v.number(),
   }),
 
+  dateSpans: defineTable({
+    start: v.string(), // ISO date string
+    end: v.string(),   // ISO date string
+    studentId: v.optional(v.id("students")),
+  }),
+
   students: defineTable({
     fullname: v.string(),
     age: v.number(),
     userId: v.optional(v.id("users")),
+    dateSpanId: v.optional(v.id("dateSpans")),
   }).index("by_userId", ["userId"]),
 
   teachers: defineTable({

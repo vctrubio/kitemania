@@ -5,6 +5,7 @@ import { api } from "../../convex/_generated/api";
 export function StudentsList() {
   const students = useQuery(api.students.list) ?? [];
   const allUsers = useQuery(api.users.getAll) ?? [];
+  const dateSpans = useQuery(api.dateSpans.list) ?? [];
 
   return (
     <div className="flex flex-col gap-4 p-4 border rounded-lg">
@@ -15,11 +16,20 @@ export function StudentsList() {
         <div className="flex flex-col gap-2">
           {students.map((student) => {
             const assignedUser = allUsers.find(u => u.id === student.userId);
+            const dateSpan = student.dateSpanId
+              ? dateSpans.find(ds => ds._id === student.dateSpanId)
+              : undefined;
             return (
               <div key={student._id} className="p-4 border rounded-md">
                 <p>Name: {student.fullname}</p>
                 <p>Age: {student.age}</p>
                 <p>Assigned to: {assignedUser?.email ?? "Not assigned"}</p>
+                <p>DateSpanId: {student.dateSpanId ?? "None"}</p>
+                {dateSpan && (
+                  <p>
+                    Date Span: {dateSpan.start} &ndash; {dateSpan.end}
+                  </p>
+                )}
               </div>
             );
           })}

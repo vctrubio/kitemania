@@ -5,7 +5,7 @@ import { api } from "./_generated/api";
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    const students = await ctx.db.query("students").collect();
+    const students = await ctx.db.query("students").order("desc").collect();
     return students;
   },
 });
@@ -40,25 +40,9 @@ export const add = mutation({
     fullname: v.string(),
     age: v.number(),
     userId: v.optional(v.id("users")),
+    dateSpanId: v.optional(v.id("dateSpans")),
   },
   handler: async (ctx, args) => {
-    // If a userId is provided, check if it's already assigned
-    if (args.userId) {
-      const existingStudent = await ctx.db
-        .query("students")
-        .withIndex("by_userId", (q) => q.eq("userId", args.userId))
-        .first();
-      
-      if (existingStudent) {
-        throw new Error("This user is already assigned to a student");
-      }
-    }
-
-    const studentId = await ctx.db.insert("students", {
-      fullname: args.fullname,
-      age: args.age,
-      userId: args.userId,
-    });
-    return studentId;
+    return await ctx.db.insert("students", args);
   },
-}); 
+});

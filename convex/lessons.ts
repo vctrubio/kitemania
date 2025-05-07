@@ -13,8 +13,8 @@ export const createLesson = mutation({
     teacherId: v.optional(v.id("teachers")),
     isCompleted: v.boolean(),
     isPaid: v.boolean(),
-    payments: v.array(v.object({ cash: v.boolean(), total: v.int64() })),
     sessionIds: v.array(v.id("sessions")),
+    paymentIds: v.array(v.id("payments")),
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert("lessons", args);
@@ -28,8 +28,8 @@ export const updateLesson = mutation({
     teacherId: v.optional(v.id("teachers")),
     isCompleted: v.optional(v.boolean()),
     isPaid: v.optional(v.boolean()),
-    payments: v.optional(v.array(v.object({ cash: v.boolean(), total: v.int64() }))),
     sessionIds: v.optional(v.array(v.id("sessions"))),
+    paymentIds: v.optional(v.array(v.id("payments"))),
   },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.id, args);
