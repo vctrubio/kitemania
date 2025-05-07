@@ -11,7 +11,23 @@ export default defineSchema({
     value: v.number(),
   }),
   students: defineTable({
+    fullname: v.string(),
+    age: v.number(),
     userId: v.optional(v.id("users")),
-    age: v.number()
-  })
+  }).index("by_userId", ["userId"]),
+  teachers: defineTable({
+    fullname: v.string(),
+    userId: v.optional(v.id("users")),
+    isFreelance: v.boolean(),
+  }).index("by_userId", ["userId"]),
+  lessons: defineTable({
+    teacherId: v.id("teachers"),
+    price: v.number(),
+    hours: v.number(),
+  }).index("by_teacher", ["teacherId"]),
+  lessonEnrollments: defineTable({
+    lessonId: v.id("lessons"),
+    studentId: v.id("students"),
+  }).index("by_lesson", ["lessonId"])
+    .index("by_student", ["studentId"]),
 });
