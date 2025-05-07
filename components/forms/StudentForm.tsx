@@ -7,12 +7,9 @@ import { addDays, format } from "date-fns";
 // date picker
 function DateSpanPicker({
   onChange,
-  studentId,
 }: {
-  onChange: (dateSpanId: Id<"dateSpans"> | undefined) => void;
-  studentId?: Id<"students">;
+  onChange: (dateSpan: { start: string; end: string } | undefined) => void;
 }) {
-  const addDateSpan = useMutation(api.dateSpans.add);
   const startRef = useRef<HTMLInputElement>(null);
   const endRef = useRef<HTMLInputElement>(null);
 
@@ -33,7 +30,7 @@ function DateSpanPicker({
 
   function changeEndDateBy(days: number) {
     if (!endRef.current) return;
-    let endDate = endRef.current.value || today;
+    const endDate = endRef.current.value || today;
     const newDate = format(addDays(new Date(endDate), days), "yyyy-MM-dd");
     endRef.current.value = newDate;
     handleBlur();
@@ -43,8 +40,7 @@ function DateSpanPicker({
     const start = startRef.current?.value ?? "";
     const end = endRef.current?.value ?? "";
     if (start && end) {
-      const id = await addDateSpan({ start, end, studentId });
-      onChange(id);
+      onChange({ start, end });
     } else {
       onChange(undefined);
     }
@@ -98,10 +94,11 @@ function DateSpanPicker({
 
 export function StudentForm() {
   const addStudent = useMutation(api.students.add);
+  const addDateSpan = useMutation(api.dateSpans.add);
+  const addDateSpanToStudent = useMutation(api.students.addDateSpanToStudent);
   const availableUsers = useQuery(api.students.getAvailableUsers) ?? [];
-  const [dateSpanId, setDateSpanId] = useState<Id<"dateSpans"> | undefined>(undefined);
-  const [studentId, setStudentId] = useState<Id<"students"> | undefined>(undefined);
-
+  const [dateSpan, setDateSpan] = useState<{ start: string; end: string } | undefined>(undefined);
+  
   return (
     <form
       onSubmit={async (e) => {
@@ -111,17 +108,23 @@ export function StudentForm() {
         const fullname = formData.get("fullname") as string;
         const age = formData.get("age") as string;
         const userId = formData.get("userId") as string;
+        const start = dateSpan?.start;
+        const end = dateSpan?.end;
 
         if (fullname && age) {
-          const id = await addStudent({
+          const studentId = await addStudent({
             fullname,
             age: parseInt(age),
             userId: userId ? (userId as Id<"users">) : undefined,
-            dateSpanId,
           });
-          setStudentId(id);
+          console.log("Student ID:", studentId);
+          
+          if (start && end) {
+            const newDateSpanId = await addDateSpan({ start, end, studentId: studentId });
+            await addDateSpanToStudent({ studentId: studentId, dateSpanId: newDateSpanId });
+          }
           form.reset();
-          setDateSpanId(undefined);
+          setDateSpan(undefined);
         }
       }}
       className="flex flex-col gap-4 p-4 border rounded-lg"
@@ -152,7 +155,7 @@ export function StudentForm() {
           </option>
         ))}
       </select>
-      <DateSpanPicker onChange={setDateSpanId} studentId={studentId} />
+      <DateSpanPicker onChange={setDateSpan} />
       <button
         type="submit"
         className="bg-foreground text-background text-sm px-4 py-2 rounded-md"

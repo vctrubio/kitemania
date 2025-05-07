@@ -46,3 +46,13 @@ export const add = mutation({
     return await ctx.db.insert("students", args);
   },
 });
+
+export const addDateSpanToStudent = mutation({
+  args: {
+    studentId: v.id("students"),
+    dateSpanId: v.id("dateSpans"),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.studentId, { dateSpanId: args.dateSpanId });
+  },
+});
