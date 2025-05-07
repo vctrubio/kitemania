@@ -5,6 +5,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 function ThemeToggle({ theme, setTheme }: { theme: string; setTheme: (t: string) => void }) {
   return (
@@ -26,7 +27,7 @@ function ThemeToggle({ theme, setTheme }: { theme: string; setTheme: (t: string)
 
 function LocksmithIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline align-middle mr-2"><circle cx="12" cy="12" r="10"/><rect x="9" y="11" width="6" height="4" rx="1"/><path d="M12 7v4"/></svg>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline align-middle mr-2"><circle cx="12" cy="12" r="10" /><rect x="9" y="11" width="6" height="4" rx="1" /><path d="M12 7v4" /></svg>
   );
 }
 
@@ -35,6 +36,11 @@ export function Navbar() {
   const { signOut } = useAuthActions();
   const router = useRouter();
   const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <header className="sticky top-0 z-10 bg-background p-4 border-b-2 border-slate-200 dark:border-slate-800 flex flex-row justify-between items-center">
@@ -47,7 +53,9 @@ export function Navbar() {
         <Link href="/bookings" className="font-semibold hover:underline">Bookings</Link>
       </nav>
       <div className="flex items-center gap-6">
-        <ThemeToggle theme={theme ?? "light"} setTheme={setTheme} />
+        {mounted && (
+          <ThemeToggle theme={theme ?? "light"} setTheme={setTheme} />
+        )}
         {isAuthenticated && (
           <button
             className="flex items-center gap-2 px-5 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors text-base font-medium ml-2"

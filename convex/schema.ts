@@ -2,9 +2,6 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { authTables } from "@convex-dev/auth/server";
 
-// The schema is normally optional, but Convex Auth
-// requires indexes defined on `authTables`.
-// The schema provides more precise TypeScript types.
 export default defineSchema({
   ...authTables,
   numbers: defineTable({
@@ -32,34 +29,37 @@ export default defineSchema({
   bookings: defineTable({
     packageId: v.id("packages"),
     students: v.array(v.id("students")),
+    //add start date, and duration. might consider the dateStruct : MyDate
   }),
 
-  lessons: defineTable({
-    bookingId: v.id("bookings"),
-    teacherId: v.optional(v.id("teachers")),
-    isCompleted: v.boolean(),
-    isPaid: v.boolean(),
-    payments: v.array(
-      v.object({
-        cash: v.boolean(),
-        total: v.int64(),
-      }),
-    ),
-    sessionIds: v.array(v.id("sessions")),
-  }),
-  
-  sessions: defineTable({
-    equipmentSetIds: v.array(v.id("equipmentSet")),
-    durationHours: v.int64(),
-    date: v.string(), // ISO date string
-  }),
-  
   bookingEnrollments: defineTable({
     bookingId: v.id("bookings"),
     studentId: v.id("students"),
   })
     .index("by_booking", ["bookingId"])
     .index("by_student", ["studentId"]),
+
+  lessons: defineTable({
+    bookingId: v.id("bookings"),
+    teacherId: v.optional(v.id("teachers")),
+    isCompleted: v.boolean(),
+    isPaid: v.boolean(),
+    sessionIds: v.array(v.id("sessions")),
+    paymentIds: v.array(v.id("payments")),
+  }),
+
+  payments: defineTable({
+    cash: v.boolean(),
+    total: v.int64(),
+    // Optionally, you can add a lessonId or bookingId reference if needed
+  }),
+
+  sessions: defineTable({
+    equipmentSetIds: v.array(v.id("equipmentSet")),
+    durationHours: v.int64(),
+    date: v.string(), // ISO date string
+  }),
+
   equipmentSet: defineTable({
     kiteId: v.id("kites"),
     barId: v.id("bars"),
@@ -79,5 +79,4 @@ export default defineSchema({
     model: v.string(),
     size: v.number(),
   }),
-
 });
