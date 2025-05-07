@@ -1,48 +1,45 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
-export const list = query({
-  args: {},
+export const listLessons = query({
   handler: async (ctx) => {
-    const lessons = await ctx.db.query("lessons").collect();
-    return lessons;
+    return await ctx.db.query("lessons").collect();
   },
 });
 
-export const getByTeacher = query({
-  args: { teacherId: v.id("teachers") },
-  handler: async (ctx, args) => {
-    const lessons = await ctx.db
-      .query("lessons")
-      .withIndex("by_teacher", (q) => q.eq("teacherId", args.teacherId))
-      .collect();
-    return lessons;
-  },
-});
-
-export const add = mutation({
+export const createLesson = mutation({
   args: {
-    teacherId: v.id("teachers"),
-    price: v.number(),
-    hours: v.number(),
-    studentIds: v.array(v.id("students")),
+    bookingId: v.id("bookings"),
+    teacherId: v.optional(v.id("teachers")),
+    isCompleted: v.boolean(),
+    isPaid: v.boolean(),
+    payments: v.array(v.object({ cash: v.boolean(), total: v.int64() })),
+    sessionIds: v.array(v.id("sessions")),
   },
   handler: async (ctx, args) => {
-    // Create the lesson first
-    const lessonId = await ctx.db.insert("lessons", {
-      teacherId: args.teacherId,
-      price: args.price,
-      hours: args.hours,
-    });
-
-    // Create enrollments for each student
-    for (const studentId of args.studentIds) {
-      await ctx.db.insert("lessonEnrollments", {
-        lessonId,
-        studentId,
-      });
-    }
-
-    return lessonId;
+    return await ctx.db.insert("lessons", args);
   },
-}); 
+});
+
+export const updateLesson = mutation({
+  args: {
+    id: v.id("lessons"),
+    bookingId: v.optional(v.id("bookings")),
+    teacherId: v.optional(v.id("teachers")),
+    isCompleted: v.optional(v.boolean()),
+    isPaid: v.optional(v.boolean()),
+    payments: v.optional(v.array(v.object({ cash: v.boolean(), total: v.int64() }))),
+    sessionIds: v.optional(v.array(v.id("sessions"))),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, args);
+    return args.id;
+  },
+});
+
+export const deleteLesson = mutation({
+  args: { id: v.id("lessons") },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.id);
+  },
+});
