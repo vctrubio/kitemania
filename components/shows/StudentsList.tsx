@@ -28,9 +28,10 @@ export function StudentsList() {
   const students = useQuery(api.students.list) ?? [];
   const allUsers = useQuery(api.users.getAll) ?? [];
   const dateSpans = useQuery(api.dateSpans.list) ?? [];
-  const availableUsers = useQuery(api.students.getAvailableUsers) ?? [];
+  const availableUsers = useQuery(api.users.getAvailableUsers) ?? [];
   
   const updateStudent = useMutation(api.students.update);
+  const deleteStudent = useMutation(api.students.remove);
   const addDateSpan = useMutation(api.dateSpans.add);
   const addDateSpanToStudent = useMutation(api.students.addDateSpanToStudent);
 
@@ -46,6 +47,26 @@ export function StudentsList() {
     student.fullname.toLowerCase().includes(searchTerm.toLowerCase()) ||
     student.age.toString().includes(searchTerm)
   );
+
+  // For referencing date spans in sort comparisons
+  (filteredStudents as any).dateSpans = dateSpans;
+
+  // Apply default sorting only initially (will be overridden by column header clicks)
+  const defaultSortedStudents = [...filteredStudents].sort((a, b) => {
+    // Get date spans for both students
+    const dateSpanA = a.dateSpanId ? dateSpans.find(ds => ds._id === a.dateSpanId) : undefined;
+    const dateSpanB = b.dateSpanId ? dateSpans.find(ds => ds._id === b.dateSpanId) : undefined;
+
+    // Sort by date span (students with date spans come first, then sort by start date)
+    if (dateSpanA && !dateSpanB) return -1;
+    if (!dateSpanA && dateSpanB) return 1;
+    if (dateSpanA && dateSpanB) {
+      return dateSpanA.start.localeCompare(dateSpanB.start);
+    }
+    
+    // If neither has date span, sort by name
+    return a.fullname.localeCompare(b.fullname);
+  });
 
   const handleEdit = (student: Student) => {
     setEditingStudent(student._id);
@@ -110,6 +131,14 @@ export function StudentsList() {
       setEditingStudent(null);
     } catch (error) {
       console.error("Failed to save student:", error);
+    }
+  };
+
+  const handleDelete = async (studentId: Id<"students">) => {
+    try {
+      await deleteStudent({ id: studentId });
+    } catch (error) {
+      console.error("Failed to delete student:", error);
     }
   };
 
@@ -210,11 +239,12 @@ export function StudentsList() {
       title="Students Registry"
       items={filteredStudents}
       columns={columns}
-      initialSortField="fullname"
+      initialSortField="date"
       initialSortDirection="asc"
       onEdit={handleEdit}
       onSave={handleSave}
       onCancel={handleCancel}
+      onDelete={handleDelete}
       getEditState={(student) => {
         const dateSpan = student.dateSpanId
           ? dateSpans.find(ds => ds._id === student.dateSpanId)
@@ -234,6 +264,7 @@ export function StudentsList() {
       editingItemId={editingStudent}
       editState={editForm}
       onEditStateChange={setEditForm}
+      viewRoute="students"
     />
   );
 }

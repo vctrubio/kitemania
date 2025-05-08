@@ -21,6 +21,7 @@ type TeacherColumn = 'fullname' | 'status';
 export function TeachersList() {
   const teachers = useQuery(api.teachers.list) ?? [];
   const updateTeacher = useMutation(api.teachers.update);
+  const deleteTeacher = useMutation(api.teachers.remove);
 
   // State for editing
   const [editingTeacher, setEditingTeacher] = useState<Id<"teachers"> | null>(null);
@@ -37,6 +38,17 @@ export function TeachersList() {
     teacher.fullname.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (teacher.isFreelance ? "freelance" : "full-time").includes(searchTerm.toLowerCase())
   );
+  
+  // Apply default sorting only initially (will be overridden by column header clicks)
+  const defaultSortedTeachers = [...filteredTeachers].sort((a, b) => {
+    // Sort by freelance status (non-freelancers first)
+    if (a.isFreelance !== b.isFreelance) {
+      return a.isFreelance ? 1 : -1; // Non-freelancers first
+    }
+    
+    // Then sort alphabetically by name
+    return a.fullname.localeCompare(b.fullname);
+  });
 
   const handleEdit = (teacher: Teacher) => {
     setEditingTeacher(teacher._id);
@@ -64,6 +76,14 @@ export function TeachersList() {
       setEditingTeacher(null);
     } catch (error) {
       console.error("Failed to save teacher:", error);
+    }
+  };
+
+  const handleDelete = async (teacherId: Id<"teachers">) => {
+    try {
+      await deleteTeacher({ id: teacherId });
+    } catch (error) {
+      console.error("Failed to delete teacher:", error);
     }
   };
 
@@ -114,11 +134,12 @@ export function TeachersList() {
       title="Teachers Registry"
       items={filteredTeachers}
       columns={columns}
-      initialSortField="fullname"
+      initialSortField="status"
       initialSortDirection="asc"
       onEdit={handleEdit}
       onSave={handleSave}
       onCancel={handleCancel}
+      onDelete={handleDelete}
       getEditState={(teacher) => ({
         fullname: teacher.fullname,
         isFreelance: teacher.isFreelance,
@@ -129,6 +150,7 @@ export function TeachersList() {
       editingItemId={editingTeacher}
       editState={editForm}
       onEditStateChange={setEditForm}
+      viewRoute="teachers"
     />
   );
 }

@@ -13,7 +13,7 @@ export function StudentForm({ onSuccess }: StudentFormProps) {
   const addStudent = useMutation(api.students.add);
   const addDateSpan = useMutation(api.dateSpans.add);
   const addDateSpanToStudent = useMutation(api.students.addDateSpanToStudent);
-  const availableUsers = useQuery(api.students.getAvailableUsers) ?? [];
+  const availableUsers = useQuery(api.users.getAvailableUsers) ?? [];
   const [dateSpan, setDateSpan] = useState<{ start: string; end: string } | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState("");

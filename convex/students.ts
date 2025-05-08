@@ -10,28 +10,11 @@ export const list = query({
   },
 });
 
-export const getAvailableUsers = query({
-  args: {},
-  handler: async (ctx) => {
-    // Get all users
-    const users = await ctx.db.query("users").collect();
-    
-    // Get all students with assigned users
-    const students = await ctx.db
-      .query("students")
-      .filter((q) => q.neq(q.field("userId"), undefined))
-      .collect();
-    
-    // Get the set of assigned user IDs
-    const assignedUserIds = new Set(students.map(s => s.userId));
-    
-    // Filter out users that are already assigned
-    const availableUsers = users.filter(user => !assignedUserIds.has(user._id));
-    
-    return availableUsers.map(user => ({
-      id: user._id,
-      email: user.email
-    }));
+export const getById = query({
+  args: { id: v.id("students") },
+  handler: async (ctx, args) => {
+    const student = await ctx.db.get(args.id);
+    return student;
   },
 });
 
@@ -47,7 +30,6 @@ export const add = mutation({
   },
 });
 
-// New update mutation for editing students
 export const update = mutation({
   args: {
     id: v.id("students"),
@@ -58,6 +40,23 @@ export const update = mutation({
   handler: async (ctx, args) => {
     const { id, ...updateData } = args;
     return await ctx.db.patch(id, updateData);
+  },
+});
+
+export const remove = mutation({
+  args: {
+    id: v.id("students"),
+  },
+  handler: async (ctx, args) => {
+    // First, find any associated date spans
+    const student = await ctx.db.get(args.id);
+    if (student?.dateSpanId) {
+      // Delete the associated date span
+      await ctx.db.delete(student.dateSpanId);
+    }
+    
+    // Delete the student
+    await ctx.db.delete(args.id);
   },
 });
 
