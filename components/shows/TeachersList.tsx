@@ -1,30 +1,134 @@
 'use client'
-import { useQuery } from "convex/react";
+import { useState } from "react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { Id } from "../../convex/_generated/dataModel";
+import { Column, EditableDataList } from "../common/EditableDataList";
+
+type Teacher = {
+  _id: Id<"teachers">;
+  fullname: string;
+  isFreelance: boolean;
+};
+
+type TeacherEditState = {
+  fullname: string;
+  isFreelance: boolean;
+};
+
+type TeacherColumn = 'fullname' | 'status';
 
 export function TeachersList() {
   const teachers = useQuery(api.teachers.list) ?? [];
-  const allUsers = useQuery(api.users.getAll) ?? [];
+  const updateTeacher = useMutation(api.teachers.update);
+
+  // State for editing
+  const [editingTeacher, setEditingTeacher] = useState<Id<"teachers"> | null>(null);
+  const [editForm, setEditForm] = useState<TeacherEditState>({ 
+    fullname: "", 
+    isFreelance: false
+  });
+  
+  // Search filter
+  const [searchTerm, setSearchTerm] = useState("");
+  
+  // Filtered teachers
+  const filteredTeachers = teachers.filter(teacher => 
+    teacher.fullname.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (teacher.isFreelance ? "freelance" : "full-time").includes(searchTerm.toLowerCase())
+  );
+
+  const handleEdit = (teacher: Teacher) => {
+    setEditingTeacher(teacher._id);
+    setEditForm({
+      fullname: teacher.fullname,
+      isFreelance: teacher.isFreelance,
+    });
+  };
+
+  const handleCancel = () => {
+    setEditingTeacher(null);
+  };
+
+  const handleSave = async (teacherId: Id<"teachers">, editState: TeacherEditState) => {
+    try {
+      // Update teacher basic info
+      await updateTeacher({
+        id: teacherId,
+        fullname: editState.fullname,
+        userId: undefined, // Teachers don't have users assigned
+        isFreelance: editState.isFreelance
+      });
+      
+      // Exit edit mode
+      setEditingTeacher(null);
+    } catch (error) {
+      console.error("Failed to save teacher:", error);
+    }
+  };
+
+  const columns: Column<Teacher, TeacherColumn>[] = [
+    {
+      key: 'fullname',
+      header: 'Name',
+      sortable: true,
+      renderCell: (teacher, isEditing, editState, onChange) => {
+        if (isEditing) {
+          return (
+            <input
+              type="text"
+              className="w-full px-2 py-1 border rounded"
+              value={editState.fullname}
+              onChange={(e) => onChange('fullname', e.target.value)}
+            />
+          );
+        }
+        return teacher.fullname;
+      }
+    },
+    {
+      key: 'status',
+      header: 'Employment Status',
+      sortable: true,
+      renderCell: (teacher, isEditing, editState, onChange) => {
+        if (isEditing) {
+          return (
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                className="rounded"
+                checked={editState.isFreelance}
+                onChange={(e) => onChange('isFreelance', e.target.checked)}
+              />
+              <span>Freelance</span>
+            </label>
+          );
+        }
+        return teacher.isFreelance ? "Freelance" : "Full-time";
+      }
+    }
+  ];
 
   return (
-    <div className="flex flex-col gap-4 p-4 border rounded-lg">
-      <h2 className="text-xl font-semibold">Teachers</h2>
-      {teachers.length === 0 ? (
-        <p>No teachers yet.</p>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {teachers.map((teacher) => {
-            const assignedUser = allUsers.find(u => u.id === teacher.userId);
-            return (
-              <div key={teacher._id} className="p-4 border rounded-md">
-                <p>Name: {teacher.fullname}</p>
-                <p>Status: {teacher.isFreelance ? "Freelance" : "Full-time"}</p>
-                <p>Assigned to: {assignedUser?.email ?? "Not assigned"}</p>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
+    <EditableDataList
+      title="Teachers Registry"
+      items={filteredTeachers}
+      columns={columns}
+      initialSortField="fullname"
+      initialSortDirection="asc"
+      onEdit={handleEdit}
+      onSave={handleSave}
+      onCancel={handleCancel}
+      getEditState={(teacher) => ({
+        fullname: teacher.fullname,
+        isFreelance: teacher.isFreelance,
+      })}
+      searchTerm={searchTerm}
+      onSearch={setSearchTerm}
+      searchPlaceholder="Search teachers..."
+      editingItemId={editingTeacher}
+      editState={editForm}
+      onEditStateChange={setEditForm}
+    />
   );
 }

@@ -23,4 +23,18 @@ export const add = mutation({
     });
     return teacherId;
   },
-}); 
+});
+
+// New update mutation for editing teachers
+export const update = mutation({
+  args: {
+    id: v.id("teachers"),
+    fullname: v.string(),
+    userId: v.optional(v.id("users")),
+    isFreelance: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const { id, ...updateData } = args;
+    return await ctx.db.patch(id, updateData);
+  },
+});
