@@ -9,9 +9,9 @@ export const listPackages = query({
 
 export const createPackage = mutation({
   args: {
-    capacity: v.int64(),
-    price: v.int64(),
-    hours: v.int64(),
+    capacity: v.number(),
+    price: v.number(),
+    hours: v.number(),
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert("packages", args);
@@ -21,9 +21,9 @@ export const createPackage = mutation({
 export const updatePackage = mutation({
   args: {
     id: v.id("packages"),
-    capacity: v.optional(v.int64()),
-    price: v.optional(v.int64()),
-    hours: v.optional(v.int64()),
+    capacity: v.optional(v.number()),
+    price: v.optional(v.number()),
+    hours: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.id, args);

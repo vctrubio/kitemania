@@ -28,9 +28,9 @@ export default defineSchema({
   }).index("by_userId", ["userId"]),
 
   packages: defineTable({
-    capacity: v.int64(),
-    price: v.int64(),
-    hours: v.int64(),
+    capacity: v.float64(),
+    price: v.float64(),
+    hours: v.float64(),
   }),
 
   bookings: defineTable({
