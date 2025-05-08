@@ -47,6 +47,20 @@ export const add = mutation({
   },
 });
 
+// New update mutation for editing students
+export const update = mutation({
+  args: {
+    id: v.id("students"),
+    fullname: v.string(),
+    age: v.number(),
+    userId: v.optional(v.id("users")),
+  },
+  handler: async (ctx, args) => {
+    const { id, ...updateData } = args;
+    return await ctx.db.patch(id, updateData);
+  },
+});
+
 export const addDateSpanToStudent = mutation({
   args: {
     studentId: v.id("students"),

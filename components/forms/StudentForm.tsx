@@ -1,167 +1,144 @@
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
-import React, { useRef, useState } from "react";
-import { addDays, format } from "date-fns";
+import React, { useState } from "react";
+import { FaSave } from "react-icons/fa";
+import { DateSpanPicker } from "./DateSpanPicker";
 
-// date picker
-function DateSpanPicker({
-  onChange,
-}: {
-  onChange: (dateSpan: { start: string; end: string } | undefined) => void;
-}) {
-  const startRef = useRef<HTMLInputElement>(null);
-  const endRef = useRef<HTMLInputElement>(null);
-
-  // Set default value for start date to today
-  const today = React.useMemo(() => {
-    const d = new Date();
-    return d.toISOString().slice(0, 10);
-  }, []);
-
-  React.useEffect(() => {
-    if (startRef.current && !startRef.current.value) {
-      startRef.current.value = today;
-    }
-    if (endRef.current && !endRef.current.value) {
-      endRef.current.value = today;
-    }
-  }, [today]);
-
-  function changeEndDateBy(days: number) {
-    if (!endRef.current) return;
-    const endDate = endRef.current.value || today;
-    const newDate = format(addDays(new Date(endDate), days), "yyyy-MM-dd");
-    endRef.current.value = newDate;
-    handleBlur();
-  }
-
-  async function handleBlur() {
-    const start = startRef.current?.value ?? "";
-    const end = endRef.current?.value ?? "";
-    if (start && end) {
-      onChange({ start, end });
-    } else {
-      onChange(undefined);
-    }
-  }
-
-  return (
-    <div className="flex flex-col gap-2">
-      <label>
-        Start Date:
-        <input
-          name="start"
-          type="date"
-          ref={startRef}
-          defaultValue={today}
-          onBlur={handleBlur}
-          className="px-2 py-1 border rounded-md ml-2"
-        />
-      </label>
-      <label>
-        End Date:
-        <div className="flex items-center gap-2">
-          <input
-            name="end"
-            type="date"
-            ref={endRef}
-            defaultValue={today}
-            onBlur={handleBlur}
-            className="px-2 py-1 border rounded-md ml-2"
-          />
-          <button
-            type="button"
-            className="px-2 py-1 border rounded"
-            onClick={() => changeEndDateBy(-1)}
-            tabIndex={-1}
-          >
-            -
-          </button>
-          <button
-            type="button"
-            className="px-2 py-1 border rounded "
-            onClick={() => changeEndDateBy(1)}
-            tabIndex={-1}
-          >
-            +
-          </button>
-        </div>
-      </label>
-    </div>
-  );
+interface StudentFormProps {
+  onSuccess?: () => void;
 }
 
-export function StudentForm() {
+export function StudentForm({ onSuccess }: StudentFormProps) {
   const addStudent = useMutation(api.students.add);
   const addDateSpan = useMutation(api.dateSpans.add);
   const addDateSpanToStudent = useMutation(api.students.addDateSpanToStudent);
   const availableUsers = useQuery(api.students.getAvailableUsers) ?? [];
   const [dateSpan, setDateSpan] = useState<{ start: string; end: string } | undefined>(undefined);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError("");
+    setIsSubmitting(true);
+    
+    try {
+      const form = e.target as HTMLFormElement;
+      const formData = new FormData(form);
+      const fullname = formData.get("fullname") as string;
+      const age = formData.get("age") as string;
+      const userId = formData.get("userId") as string;
+      const start = dateSpan?.start;
+      const end = dateSpan?.end;
+
+      if (!fullname || !age) {
+        setFormError("Name and age are required");
+        return;
+      }
+
+      const studentId = await addStudent({
+        fullname,
+        age: parseInt(age),
+        userId: userId ? (userId as Id<"users">) : undefined,
+      });
+      
+      if (start && end) {
+        const newDateSpanId = await addDateSpan({ start, end, studentId: studentId });
+        await addDateSpanToStudent({ studentId: studentId, dateSpanId: newDateSpanId });
+      }
+      
+      form.reset();
+      setDateSpan(undefined);
+      
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (error) {
+      console.error("Error adding student:", error);
+      setFormError("Failed to create student. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   
   return (
     <form
-      onSubmit={async (e) => {
-        e.preventDefault();
-        const form = e.target as HTMLFormElement;
-        const formData = new FormData(form);
-        const fullname = formData.get("fullname") as string;
-        const age = formData.get("age") as string;
-        const userId = formData.get("userId") as string;
-        const start = dateSpan?.start;
-        const end = dateSpan?.end;
-
-        if (fullname && age) {
-          const studentId = await addStudent({
-            fullname,
-            age: parseInt(age),
-            userId: userId ? (userId as Id<"users">) : undefined,
-          });
-          console.log("Student ID:", studentId);
-          
-          if (start && end) {
-            const newDateSpanId = await addDateSpan({ start, end, studentId: studentId });
-            await addDateSpanToStudent({ studentId: studentId, dateSpanId: newDateSpanId });
-          }
-          form.reset();
-          setDateSpan(undefined);
-        }
-      }}
-      className="flex flex-col gap-4 p-4 border rounded-lg"
+      onSubmit={handleSubmit}
+      className="flex flex-col gap-5 max-w-2xl mx-auto"
     >
-      <h2 className="text-xl font-semibold">Add Student</h2>
-      <input
-        name="fullname"
-        type="text"
-        placeholder="Enter full name"
-        className="px-4 py-2 border rounded-md"
-        required
-      />
-      <input
-        name="age"
-        type="number"
-        placeholder="Enter age"
-        className="px-4 py-2 border rounded-md"
-        required
-      />
-      <select
-        name="userId"
-        className="px-4 py-2 border rounded-md"
-      >
-        <option value="">Select a user (optional)</option>
-        {availableUsers.map((user) => (
-          <option key={user.id} value={user.id}>
-            {user.email}
-          </option>
-        ))}
-      </select>
-      <DateSpanPicker onChange={setDateSpan} />
-      <button
-        type="submit"
-        className="bg-foreground text-background text-sm px-4 py-2 rounded-md"
-      >
-        Add Student
-      </button>
+      {formError && (
+        <div className="bg-red-50 text-red-600 p-3 rounded-md">{formError}</div>
+      )}
+      
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="flex flex-col">
+          <label htmlFor="fullname" className="text-sm font-medium mb-1 text-gray-700">
+            Full Name <span className="text-red-500">*</span>
+          </label>
+          <input
+            id="fullname"
+            name="fullname"
+            type="text"
+            placeholder="Enter student's full name"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+        </div>
+        
+        <div className="flex flex-col">
+          <label htmlFor="age" className="text-sm font-medium mb-1 text-gray-700">
+            Age <span className="text-red-500">*</span>
+          </label>
+          <input
+            id="age"
+            name="age"
+            type="number"
+            placeholder="Enter age"
+            min="0"
+            max="120"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+        </div>
+      </div>
+      
+      <div className="flex flex-col">
+        <label htmlFor="userId" className="text-sm font-medium mb-1 text-gray-700">
+          Assign to User
+        </label>
+        <select
+          id="userId"
+          name="userId"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">Select a user (optional)</option>
+          {availableUsers.map((user) => (
+            <option key={user.id} value={user.id}>
+              {user.email}
+            </option>
+          ))}
+        </select>
+      </div>
+      
+      <div className="flex flex-col">
+        <label className="text-sm font-medium mb-1 text-gray-700">
+          Date Range
+        </label>
+        <DateSpanPicker onChange={setDateSpan} />
+      </div>
+      
+      <div className="flex justify-end mt-4">
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className={`flex items-center gap-2 px-4 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors ${
+            isSubmitting ? "opacity-70 cursor-not-allowed" : ""
+          }`}
+        >
+          <FaSave /> {isSubmitting ? "Saving..." : "Add Student"}
+        </button>
+      </div>
     </form>
   );
 }
